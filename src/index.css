@@ -1,0 +1,339 @@
+@import 'tailwindcss';
+
+/* Theme is an explicit choice stamped on <html>, never an automatic flip. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/* ------------------------------------------------------------------ *
+ * Forward — design tokens
+ * Single source of truth. Every component consumes these; nothing
+ * hard-codes a hex value. Re-theming the product = editing this block.
+ * ------------------------------------------------------------------ */
+@theme {
+  --font-sans: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+  /* Brand — teal, the clinical primary */
+  --color-brand-50: #e6f4f1;
+  --color-brand-100: #e0f2f1;
+  --color-brand-200: #b2dfdb;
+  --color-brand-300: #6ecfbd;
+  --color-brand-400: #26a69a;
+  --color-brand-500: #00897b;
+  --color-brand-600: #00695c;
+  --color-brand-700: #00564b;
+  --color-brand-800: #0b3d38;
+  --color-deep: #0c4a6e;
+  --color-deep-soft: #7dd3fc;
+  /* Ink that sits ON a brand fill. Flips to near-black in dark mode, where
+     brand-600 is lightened for legibility as text. */
+  --color-on-brand: #ffffff;
+  /* Sidebar rail surface — separate from brand so dark mode can darken the
+     rail without dragging every brand-coloured button with it. */
+  --color-rail: #00695c;
+  /* Bedside-monitor surface. Deliberately identical in both themes: a monitor
+     is a dark screen in a lit room and a dark screen in an unlit one, and
+     `--color-ink` inverts, which would put white text on white here. */
+  --color-monitor: #0c1614;
+
+  /* Surfaces */
+  --color-canvas: #e4edea;
+  --color-surface: #ffffff;
+  --color-subtle: #f5faf8;
+  --color-hairline: #e2e8f0;
+  --color-hairline-soft: #ebf2ee;
+  --color-hairline-teal: #e6efec;
+  --color-hairline-top: #d4e9e3;
+  /* A visible border for hover/emphasis, where a hairline is too faint. */
+  --color-line-strong: #cbd5e1;
+
+  /* Ink */
+  --color-ink: #0f172a;
+  --color-ink-soft: #374151;
+  --color-ink-body: #475569;
+  --color-ink-muted: #64748b;
+  --color-ink-subtle: #94a3b8;
+
+  /* Semantic status */
+  --color-success: #16a34a;
+  --color-success-soft: #f0fdf4;
+  --color-success-deep: #166534;
+  --color-warning: #d97706;
+  --color-warning-soft: #fffbeb;
+  --color-warning-deep: #92400e;
+  --color-critical: #dc2626;
+  --color-critical-soft: #fef2f2;
+  --color-critical-deep: #991b1b;
+  --color-info: #1d4ed8;
+  --color-info-soft: #eff6ff;
+  --color-neutral: #475569;
+  --color-neutral-soft: #f8fafc;
+  --color-emergency: #ef4444;
+  --color-accent-violet: #7c3aed;
+  --color-violet-soft: #f5f3ff;
+
+  /* Type scale — the design's body copy is 13px, forms are 14px */
+  --text-3xs: 0.625rem;
+  --text-3xs--line-height: 1.4;
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1.45;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.5;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.55;
+  --text-base: 0.875rem;
+  --text-base--line-height: 1.55;
+  --text-md: 0.9375rem;
+  --text-md--line-height: 1.5;
+
+  /* Radii */
+  --radius-control: 7px;
+  --radius-field: 8px;
+  --radius-tile: 9px;
+  --radius-card: 12px;
+  --radius-panel: 16px;
+
+  /* Elevation */
+  --shadow-hairline: 0 1px 3px rgb(0 0 0 / 0.05);
+  --shadow-card: 0 1px 3px rgb(0 0 0 / 0.06), 0 4px 12px rgb(0 0 0 / 0.06);
+  --shadow-lift: 0 4px 16px rgb(0 0 0 / 0.1);
+  --shadow-panel: 0 8px 24px rgb(0 0 0 / 0.1);
+  --shadow-topbar: 0 1px 6px rgb(0 105 92 / 0.06);
+  --shadow-fab: 0 4px 14px rgb(3 105 161 / 0.3);
+  --shadow-modal: 0 24px 64px rgb(0 0 0 / 0.18);
+
+  /* Layout rails */
+  --spacing-rail: 56px;
+  --spacing-rail-open: 224px;
+  --spacing-topbar: 58px;
+
+  /* Motion */
+  --animate-fade-up: fade-up 0.22s ease both;
+  --animate-fade-in: fade-in 0.15s ease both;
+  --animate-slide-in: slide-in 0.2s cubic-bezier(0.32, 0.72, 0, 1) both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes slide-in {
+    from {
+      opacity: 0;
+      transform: translateX(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Dark theme — a selected set of steps from the same ramps, not an
+ * inverted copy. Only tokens are redefined; no component knows about it.
+ * The categorical chart palette is unchanged: it was validated against
+ * the dark surface too and passes all six checks there.
+ * ------------------------------------------------------------------ */
+[data-theme='dark'] {
+  --color-brand-50: #10312c;
+  --color-brand-100: #143b34;
+  --color-brand-200: #1b5b52;
+  --color-brand-300: #2a8d7d;
+  --color-brand-400: #17a08d;
+  --color-brand-500: #1fb89f;
+  --color-brand-600: #17a08d;
+  --color-brand-700: #0f7c6c;
+  --color-brand-800: #0a5b50;
+  --color-on-brand: #052420;
+  --color-rail: #0d1a18;
+  --color-monitor: #0c1614;
+
+  --color-canvas: #0b1412;
+  --color-surface: #121c1a;
+  --color-subtle: #182422;
+  --color-hairline: #24322f;
+  --color-hairline-soft: #1e2b28;
+  --color-hairline-teal: #22302d;
+  --color-hairline-top: #22302d;
+  --color-line-strong: #354744;
+
+  --color-ink: #e6efec;
+  --color-ink-soft: #ccd9d5;
+  --color-ink-body: #a9b9b5;
+  --color-ink-muted: #8c9d99;
+  --color-ink-subtle: #6e7f7b;
+
+  --color-success: #4ade80;
+  --color-success-soft: #0f2a1c;
+  --color-success-deep: #86efac;
+  --color-warning: #fbbf24;
+  --color-warning-soft: #2c2110;
+  --color-warning-deep: #fcd34d;
+  --color-critical: #f87171;
+  --color-critical-soft: #2e1517;
+  --color-critical-deep: #fca5a5;
+  --color-info: #93c5fd;
+  --color-info-soft: #14203a;
+  --color-neutral: #a9b9b5;
+  --color-neutral-soft: #1a2422;
+  --color-emergency: #f05252;
+  --color-accent-violet: #a78bfa;
+  --color-violet-soft: #211b3a;
+
+  color-scheme: dark;
+}
+
+@layer base {
+  :root {
+    /* Chart chrome that must follow the theme. The series hues do not —
+       they are validated for both surfaces. */
+    --chart-track: #f1f5f9;
+    --chart-surface: #ffffff;
+  }
+
+  [data-theme='dark'] {
+    --chart-track: #24322f;
+    --chart-surface: #121c1a;
+  }
+
+  * {
+    border-color: var(--color-hairline);
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* One consistent focus treatment across every interactive element. */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::placeholder {
+    color: var(--color-ink-subtle);
+  }
+
+  /* Numerals in tables/amounts should never jitter between renders. */
+  table,
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer utilities {
+  .scrollbar-slim {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--color-ink-subtle) 45%, transparent) transparent;
+  }
+  .scrollbar-slim::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollbar-slim::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--color-ink-subtle) 45%, transparent);
+    border-radius: 99px;
+  }
+  .scrollbar-slim::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* Colour-picker rails: the track *is* the gradient, so the control shows the
+     range it spans rather than describing it. */
+  .accent-rail {
+    appearance: none;
+    width: 100%;
+    height: 14px;
+    border-radius: 99px;
+    border: 1px solid var(--color-hairline);
+    cursor: pointer;
+  }
+  .accent-rail::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 99px;
+    background: var(--color-surface);
+    border: 2px solid var(--color-ink);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+    cursor: grab;
+  }
+  .accent-rail::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 99px;
+    background: var(--color-surface);
+    border: 2px solid var(--color-ink);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+    cursor: grab;
+  }
+
+  /* Rhythm strip: the trace is drawn once, then swept, so the monitor reads as
+     live. Stopped entirely under reduced-motion — see the media query below. */
+  .ecg-sweep {
+    stroke-dasharray: 46 220;
+    animation: ecg-sweep 2.6s linear infinite;
+  }
+  @keyframes ecg-sweep {
+    from {
+      stroke-dashoffset: 266;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Sidebar rail keeps a light-on-dark scrollbar. */
+  .scrollbar-rail {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(255 255 255 / 0.25) transparent;
+  }
+  .scrollbar-rail::-webkit-scrollbar {
+    width: 6px;
+  }
+  .scrollbar-rail::-webkit-scrollbar-thumb {
+    background: rgb(255 255 255 / 0.25);
+    border-radius: 99px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
