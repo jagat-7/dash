@@ -35,12 +35,12 @@ their own markup.
 ```
 src/
 ├── components/
-│   ├── ui/          Design-system primitives — know nothing about HMIS
+│   ├── ui/          Design-system primitives
 │   ├── charts/      DonutChart · Gauge · TrendLine · Sparkline · palette
-│   ├── domain/      HMIS-aware composites (StatusBadge, BedTile, VitalCard…)
-│   └── layout/      AppShell · Sidebar · Topbar · QuickActions · PageHeader
+│   ├── domain/      Domain-aware composites (StatusBadge, KpiCard, ActionCard…)
+│   └── layout/      AppShell · Sidebar · Topbar · ShortcutDock · PageHeader
 ├── data/            Typed mock data + domain types
-├── pages/           One file per screen; EMR tabs in pages/emr/
+├── pages/           One file per screen
 ├── store/           Zustand store (session, branch scope, UI prefs)
 └── lib/             cn() class merger, formatters
 ```
