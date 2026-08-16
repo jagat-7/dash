@@ -14,7 +14,7 @@ import {
   ThemeSelect,
   type IconName,
 } from '@/components/ui'
-import { AccentPicker, AccentPreview } from '@/components/domain'
+import { AccentPicker } from '@/components/domain'
 import { PageHeader } from '@/components/layout'
 import { cn } from '@/lib/cn'
 import { DEFAULT_ACCENT } from '@/data/accents'
@@ -126,13 +126,6 @@ export function SettingsPage() {
                   <AccentPicker className="mt-3.5" />
                 </div>
 
-                <div className="border-t border-hairline-teal pt-5">
-                  <p className="text-sm font-medium text-ink">Live Component Preview</p>
-                  <p className="mt-0.5 text-xs text-ink-muted">
-                    Interactive preview of live UI components rendered with your selected theme and accent palette.
-                  </p>
-                  <AccentPreview className="mt-3.5" />
-                </div>
               </CardBody>
             </Card>
 
