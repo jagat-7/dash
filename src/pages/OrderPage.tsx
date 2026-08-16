@@ -19,7 +19,6 @@ import {
 } from '@/components/ui'
 import { StatusBadge } from '@/components/domain'
 import { INITIAL_ORDERS, type OrderRecord } from '@/data/orders'
-import { useAppStore } from '@/store/useAppStore'
 import { cn } from '@/lib/cn'
 
 const STATUS_OPTIONS = ['APPROVED', 'PENDING', 'VERIFIED', 'DECLINED', 'HOLD']
@@ -34,7 +33,6 @@ const STATUS_AMOUNT_RIGHT_BORDER: Record<string, string> = {
 
 export function OrdersPage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const openRegistration = useAppStore((state) => state.setRegistrationOpen)
 
   const [orders, setOrders] = useState<OrderRecord[]>(INITIAL_ORDERS)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -338,11 +336,6 @@ export function OrdersPage() {
                 }
               />
             </Popover>
-            <div className="ml-auto flex items-center gap-2">
-              <Button icon="plus" size="sm" onClick={() => openRegistration(true)}>
-                New Order
-              </Button>
-            </div>
           </>
         }
       >
