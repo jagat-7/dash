@@ -1,6 +1,6 @@
 # Forward — React design build
 
-The `HMIS Console v10.dc.html` prototype recreated as a real React application:
+The `Dashbard.dc.html` prototype recreated as a real React application:
 a reusable component library, an app shell, and all 11 screens — plus a settings
 screen that retints the whole console. **No backend** —
 every screen renders from typed mock data in `src/data/`.
@@ -112,10 +112,6 @@ occupancy (`Gauge`), payer mix (`DonutChart`), OPD load by weekday × hour
 `AlertList` · `VitalCard` · `Timeline` · `NoteCard` · `PatientLink` · `BedTile` ·
 `BedLegend` · `BranchSwitcher` · `RegistrationModal`
 
-**Clinical** (`domain/Clinical.tsx`, `domain/PatientBanner.tsx`) —
-`PatientBanner` · `EwsCard` · `VitalsMonitor` · `VitalTrend` ·
-`MedicationSchedule` · `ReferenceRange` · `CareTeam` · `FluidBalanceCard`
-
 **Icons** — 54 inline glyphs in one registry, no icon package. The gallery
 renders them from `iconNames`, so the page cannot fall behind the registry.
 
@@ -226,68 +222,6 @@ design, so the control can never end up somewhere unreachable. A press that
 travels under 4px counts as a click, so dragging and toggling never fight. The
 vertical offset is clamped to the viewport, survives a resize, and persists.
 
-## The patient chart
-
-`/patients/:id` is the EMR proper, and it is built the way a chart is read.
-
-**`PatientBanner`** is the wristband: name and MRN with a copy action, a NEWS2
-pill, an allergy strip that is a full-width band rather than a badge you can
-miss, six standing facts (ward/bed, length of stay, attending, code status,
-isolation, diet), and the latest observations — each carrying its direction
-since the previous round, because 38.1 falling and 38.1 climbing are different
-patients.
-
-Acuity colour appears **only inside the labelled score pill**. An earlier draft
-also carried a coloured stripe along the top edge and a tinted ring on the
-avatar; both were removed. A colour with nothing to read is a fact the viewer
-cannot act on, and it violates the rule the rest of the app follows.
-
-Nothing on the banner is repeated below it. The score's *breakdown* is in the
-rail, the full vitals set is in Vitals & trends, encounters are in Visits — the
-overview keeps only what is unique to it: what needs doing, the problem list,
-and the current assessment and plan.
-
-Around it:
-
-- **`EwsCard`** — NEWS2 with each parameter's 0–3 contribution shown as
-  countable pips, plus the escalation that band demands. A 5 spread across five
-  parameters is a different patient from a 5 sitting in one.
-- **`VitalsMonitor`** — a bedside rhythm strip. The trace is decorative (the
-  numbers beside it are the data) but it is what makes a chart read as live;
-  the sweep stops under `prefers-reduced-motion`. It paints on `--color-monitor`,
-  a token deliberately identical in both themes — a monitor is a dark screen in
-  a lit room and a dark screen in an unlit one, and `--color-ink` inverts.
-- **`VitalTrend`** — eight observation rounds per vital with the normal band
-  drawn behind the line, so "is this where it should be" is answered by
-  position rather than arithmetic. Out-of-range series draw in critical.
-- **`MedicationSchedule`** — the MAR: drugs against the day's rounds, each cell
-  stating *given / due / missed / held / scheduled* in words as well as colour,
-  because that is a question a nurse is legally answering.
-- **`ReferenceRange`** — where a result sits inside its band, parsed from the
-  reference text (`4–11 ×10⁹/L`, `< 5 mg/L`).
-- **`CareTeam`**, **`FluidBalanceCard`**, and an imaging tab with per-modality
-  icons and radiologist reports.
-
-Ten clinical glyphs were added to the icon registry for it — stethoscope,
-heart, lungs, thermometer, syringe, microscope, ambulance, wheelchair, dna,
-mask — drawn on the same 24×24 grid with the same 2px round stroke.
-
-## Overlays & anchored panels
-
-Absolutely-positioned dropdowns break in exactly two ways, and both were live in
-this build: an ancestor with `overflow: hidden` clips them (`Card`, `InfoCard`
-and `DataTable` all set it, so the pagination row-size chooser was unusable),
-and inside a scrolling well they drift away from their trigger.
-
-`components/ui/Anchored.tsx` replaces the pattern. `AnchoredPanel` portals to
-`document.body`, measures the trigger's viewport rect, positions itself `fixed`,
-re-measures on scroll (capture phase, so ancestor wells count) and on resize,
-flips above the trigger when the space below runs out, and clamps itself inside
-the viewport. It stays `visibility: hidden` until measured, so a panel can never
-flash at the wrong coordinates.
-
-Every dropdown in the app goes through it. Nothing else in the library is
-allowed to position a layer by hand.
 
 ## Modules & the launcher
 
