@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Forward ERP</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <!-- FontAwesome 6 CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          },
+          colors: {
+            erp: {
+              canvas: '#f3f6fc',
+              brandIndigo: '#5851ea',
+              brandIndigoDark: '#4942d9',
+              brandViolet: '#685ef8',
+              cardLight: '#ffffff',
+              cardDark: '#554ce8'
+            }
+          },
+          boxShadow: {
+            'card-light': '0 8px 24px -4px rgba(148, 163, 184, 0.16), 0 2px 6px -1px rgba(148, 163, 184, 0.08)',
+            'card-colored': '0 12px 28px -6px rgba(88, 81, 234, 0.38), 0 4px 10px -2px rgba(88, 81, 234, 0.2)',
+            'nav-dock': '0 -6px 30px rgba(15, 23, 42, 0.06)',
+            'fab-glow': '0 10px 25px -4px rgba(88, 81, 234, 0.45)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom scrollbars hidden */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Pulse beacon for live duty shift */
+    @keyframes pulse-ring {
+      0% {
+        transform: scale(0.9);
+        box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7);
+      }
+
+      70% {
+        transform: scale(1.18);
+        box-shadow: 0 0 0 5px rgba(244, 63, 94, 0);
+      }
+
+      100% {
+        transform: scale(0.9);
+        box-shadow: 0 0 0 0 rgba(244, 63, 94, 0);
+      }
+    }
+
+    .live-beacon {
+      animation: pulse-ring 2.2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+    }
+
+    .tap-effect {
+      transition: transform 0.15s ease;
+    }
+
+    .tap-effect:active {
+      transform: scale(0.97);
+    }
+
+    /* Left Drawer Slide Animations */
+    #sidebar-drawer-panel {
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    #sidebar-drawer-overlay {
+      transition: opacity 0.3s ease;
+    }
+
+    /* Custom Curved Scooped Dock Shadow */
+    .dock-shadow-filter {
+      filter: drop-shadow(0 -8px 20px rgba(15, 23, 42, 0.08));
+    }
+  </style>
+</head>
+
+<body
+  class="bg-slate-900 text-slate-800 min-h-screen flex items-center justify-center p-0 md:p-6 antialiased font-sans select-none">
+
+  <!-- Mobile Shell Frame (iPhone Pro Aspect) -->
+  <div
+    class="relative w-full max-w-[480px] h-[100dvh] md:h-[930px] bg-[#f3f6fb] md:rounded-[48px] overflow-hidden flex flex-col shadow-[0_30px_90px_rgba(0,0,0,0.5)] md:border-[10px] md:border-slate-800 transition-all">
+
+    <!-- 1. TOP STATUS BAR -->
+    <header
+      class="bg-white px-7 pt-3 pb-1.5 flex justify-between items-center text-xs tracking-tight shrink-0 select-none z-30 border-b border-slate-100/60">
+      <div class="font-extrabold text-[14px] text-slate-900 font-sans tracking-tight" id="status-clock">3:30</div>
+
+      <div class="w-20 h-4 bg-slate-900 rounded-full hidden md:block"></div>
+
+      <!-- Signal / Wifi / Battery -->
+      <div class="flex items-center space-x-2 text-[12px] text-slate-800">
+        <i class="fa-solid fa-signal text-[11px]"></i>
+        <i class="fa-solid fa-wifi text-[11px]"></i>
+        <div class="flex items-center space-x-1">
+          <div class="w-5 h-2.5 border-[1.2px] border-slate-800 rounded-sm p-[1.5px] flex items-center">
+            <div class="w-full h-full bg-slate-900 rounded-[1px]"></div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- 2. USER GREETING & HEADER WITH LEFT HAMBURGER MENU BUTTON -->
+    <div class="bg-white px-5 pt-2 pb-3.5 flex items-center justify-between border-b border-slate-100 shrink-0 z-20">
+      <div class="flex items-center space-x-3">
+        <!-- Hamburger Menu Button -->
+        <button onclick="toggleSidebarMenu()"
+          class="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-200/90 text-slate-700 hover:text-erp-brandIndigo hover:bg-indigo-50/60 active:scale-95 transition-all flex items-center justify-center shadow-sm"
+          aria-label="Open Navigation Menu">
+          <i class="fa-solid fa-bars-staggered text-sm"></i>
+        </button>
+
+        <div>
+          <div class="text-[11px] font-bold text-slate-400 leading-none">Hi, Jagat Ovi</div>
+          <h1 class="text-[20px] font-extrabold text-slate-900 tracking-tight leading-tight mt-1">
+            Welcome back!
+          </h1>
+        </div>
+      </div>
+
+      <!-- Action Trio: Search, Notifications, Avatar -->
+      <div class="flex items-center space-x-2">
+        <button onclick="showToast('Global Search')"
+          class="w-8 h-8 rounded-full bg-slate-50 border border-slate-200/80 hover:bg-slate-100 active:scale-95 transition-all flex items-center justify-center text-slate-600 shadow-sm"
+          title="Search">
+          <i class="fa-solid fa-magnifying-glass text-[11px]"></i>
+        </button>
+
+        <button onclick="showToast('Notifications: 2 items pending')"
+          class="relative w-8 h-8 rounded-full bg-slate-50 border border-slate-200/80 hover:bg-slate-100 active:scale-95 transition-all flex items-center justify-center text-slate-600 shadow-sm"
+          title="Notifications">
+          <i class="fa-regular fa-bell text-[11px]"></i>
+          <span class="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+        </button>
+
+        <div onclick="toggleSidebarMenu()"
+          class="relative cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+          title="User Profile & Menu">
+          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&h=120&q=80"
+            alt="User Profile"
+            class="w-9 h-9 rounded-full object-cover border-2 border-white shadow-md ring-1 ring-slate-200">
+          <span
+            class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. SCROLLABLE DASHBOARD VIEW -->
+    <main class="flex-1 overflow-y-auto no-scrollbar px-5 pt-3.5 pb-28 space-y-4">
+
+      <!-- LIVE DUTY MONITORING CARD -->
+      <section
+        class="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-card-light flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div
+            class="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100/80 text-erp-brandIndigo flex items-center justify-center text-base">
+            <i class="fa-solid fa-business-time"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-1.5">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Shift Live</span>
+              <span class="w-2 h-2 rounded-full bg-rose-500 live-beacon"></span>
+            </div>
+            <div class="text-xs font-bold text-slate-800 mt-0.5">
+              Check-In: <span class="font-mono font-semibold text-slate-600">10:27:01</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-right">
+          <div class="text-[11px] font-bold text-slate-400" id="current-date-label">17 Aug 2026</div>
+          <div class="text-xs font-medium text-slate-500 mt-0.5">
+            Duty: <span class="font-mono font-extrabold text-erp-brandIndigo text-sm"
+              id="live-duty-timer">10:19:42</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION TITLE: OVERVIEW WITH HORIZON SWITCHER -->
+      <div class="flex items-center justify-between pt-0.5">
+        <div>
+          <h2 class="text-base font-extrabold text-slate-900 tracking-tight">Overview</h2>
+          <p class="text-[11px] font-medium text-slate-400">Performance & Field Operations</p>
+        </div>
+
+        <!-- Master T / W / M Horizon Switcher -->
+        <div class="bg-slate-200/70 p-0.5 rounded-xl flex items-center space-x-0.5">
+          <button onclick="setGlobalHorizon('T', this)"
+            class="horizon-btn px-2.5 py-1 text-[10px] font-extrabold rounded-lg bg-white text-erp-brandIndigo shadow-sm transition-all">Today</button>
+          <button onclick="setGlobalHorizon('W', this)"
+            class="horizon-btn px-2.5 py-1 text-[10px] font-extrabold rounded-lg text-slate-500 hover:text-slate-800 transition-all">Week</button>
+          <button onclick="setGlobalHorizon('M', this)"
+            class="horizon-btn px-2.5 py-1 text-[10px] font-extrabold rounded-lg text-slate-500 hover:text-slate-800 transition-all">Month</button>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- 2x2 BENTO KPI GRID: ALTERNATING HIGH-CONTRAST CARDS -->
+      <!-- Raw numeric values with no currency symbols (default NRS) -->
+      <!-- ======================================================== -->
+      <div class="grid grid-cols-2 gap-3.5">
+
+        <!-- ================= CARD 1: ORDER (VIBRANT INDIGO) ================= -->
+        <article
+          class="bg-gradient-to-br from-[#594fe7] to-[#4b40dc] text-white rounded-[26px] p-4 shadow-card-colored flex flex-col justify-between relative overflow-hidden tap-effect">
+          <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+
+          <div>
+            <!-- Header -->
+            <div class="flex items-center space-x-2.5 pb-2">
+              <div
+                class="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-xs shadow-inner">
+                <i class="fa-solid fa-cart-shopping"></i>
+              </div>
+              <span class="text-xs font-bold text-white/90 tracking-wide uppercase">ORDER</span>
+            </div>
+
+            <!-- Hero Metric -->
+            <div>
+              <div class="text-[10px] font-semibold text-white/70 uppercase tracking-wider">Billed</div>
+              <div class="text-2xl font-extrabold font-mono text-white tracking-tight mt-0.5" id="val-order-billed">
+                0.00
+              </div>
+            </div>
+
+            <!-- 3 Rows: Pending, Approved, Declined (Amount Only) -->
+            <div class="mt-3 space-y-1.5 text-xs">
+              <div
+                class="flex items-center justify-between bg-black/15 rounded-xl px-2.5 py-1 backdrop-blur-sm border border-white/10">
+                <span class="text-[11px] text-white/80 flex items-center">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-300 mr-1.5"></span>Pending
+                </span>
+                <span class="font-mono font-bold text-white text-[11px]" id="val-order-pending">0.00</span>
+              </div>
+
+              <div
+                class="flex items-center justify-between bg-black/15 rounded-xl px-2.5 py-1 backdrop-blur-sm border border-white/10">
+                <span class="text-[11px] text-white/80 flex items-center">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 mr-1.5"></span>Approved
+                </span>
+                <span class="font-mono font-bold text-white text-[11px]" id="val-order-approved">0.00</span>
+              </div>
+
+              <div
+                class="flex items-center justify-between bg-black/15 rounded-xl px-2.5 py-1 backdrop-blur-sm border border-white/10">
+                <span class="text-[11px] text-white/80 flex items-center">
+                  <span class="w-1.5 h-1.5 rounded-full bg-rose-300 mr-1.5"></span>Declined
+                </span>
+                <span class="font-mono font-bold text-white text-[11px]" id="val-order-declined">0.00</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Micro Sparkline -->
+          <div class="h-7 w-full pt-1">
+            <svg viewBox="0 0 140 28" class="w-full h-full" preserveAspectRatio="none">
+              <path d="M0,24 L60,24 L82,4 L96,24 L140,24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"
+                stroke-linecap="round" />
+              <circle cx="82" cy="4" r="2.5" fill="#ffffff" />
+            </svg>
+          </div>
+        </article>
+
+        <!-- ================= CARD 2: COLLECTION (NO SETTLEMENT) ================= -->
+        <article
+          class="bg-white text-slate-800 rounded-[26px] p-4 border border-slate-200/80 shadow-card-light flex flex-col justify-between relative overflow-hidden tap-effect">
+          <div>
+            <!-- Header -->
+            <div class="flex items-center space-x-2.5 pb-2">
+              <div
+                class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center text-xs shadow-sm">
+                <i class="fa-solid fa-sack-dollar text-sm"></i>
+              </div>
+              <span class="text-xs font-extrabold text-slate-800 tracking-wide uppercase">COLLECTION</span>
+            </div>
+
+            <!-- Hero Metric -->
+            <div>
+              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Received</div>
+              <div class="text-2xl font-extrabold font-mono text-slate-900 tracking-tight mt-0.5" id="val-col-received">
+                0.00
+              </div>
+            </div>
+
+            <!-- Rows: Cash & Bank (Amount only, count removed) -->
+            <div class="mt-3 space-y-1.5 text-xs">
+              <div
+                class="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl px-2.5 py-1.5">
+                <span class="text-[11px] text-slate-600 font-medium flex items-center">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>Cash
+                </span>
+                <span class="font-mono font-bold text-slate-800 text-[11px]" id="val-col-cash">0.00</span>
+              </div>
+
+              <div
+                class="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl px-2.5 py-1.5">
+                <span class="text-[11px] text-slate-600 font-medium flex items-center">
+                  <span class="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5"></span>Bank
+                </span>
+                <span class="font-mono font-bold text-slate-800 text-[11px]" id="val-col-bank">0.00</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Micro Sparkline -->
+          <div class="h-7 w-full pt-1">
+            <svg viewBox="0 0 140 28" class="w-full h-full" preserveAspectRatio="none">
+              <path d="M0,24 L50,24 L68,6 L80,24 L140,24" fill="none" stroke="#10b981" stroke-width="2"
+                stroke-linecap="round" />
+              <circle cx="68" cy="6" r="2.5" fill="#10b981" />
+            </svg>
+          </div>
+        </article>
+
+        <!-- ================= CARD 3: VISIT (CRISP WHITE) ================= -->
+        <article
+          class="bg-white text-slate-800 rounded-[26px] p-4 border border-slate-200/80 shadow-card-light flex flex-col justify-between relative overflow-hidden tap-effect">
+          <div>
+            <!-- Header with Lucide Map-Pinned Icon -->
+            <div class="flex items-center space-x-2.5 pb-2">
+              <div
+                class="w-8 h-8 rounded-full bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center shadow-sm">
+                <i data-lucide="map-pinned" class="w-4 h-4 text-purple-600"></i>
+              </div>
+              <span class="text-xs font-extrabold text-slate-800 tracking-wide uppercase">VISIT</span>
+            </div>
+
+            <!-- Hero Metric -->
+            <div>
+              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">New Visit</div>
+              <div class="text-2xl font-extrabold font-mono text-slate-900 tracking-tight mt-0.5" id="val-visit-total">
+                0
+              </div>
+            </div>
+
+            <!-- 3 Rows: Order Conv, Payment Conv, GPS -->
+            <div class="mt-3 space-y-1.5 text-xs">
+              <div class="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl px-2.5 py-1">
+                <span class="text-[11px] text-slate-600 font-medium flex items-center">
+                  <span class="w-1.5 h-1.5 rounded-full bg-erp-brandIndigo mr-1.5"></span>Order
+                </span>
+                <span class="font-mono font-bold text-slate-800 text-[11px]" id="val-visit-order">0 (0.00)</span>
+              </div>
+
+              <div class="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl px-2.5 py-1">
+                <span class="text-[11px] text-slate-600 font-medium flex items-center">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>Collection
+                </span>
+                <span class="font-mono font-bold text-slate-800 text-[11px]" id="val-visit-col">0 (0.00)</span>
+              </div>
+
+              <div
+                class="flex items-center justify-between bg-purple-50/60 border border-purple-100/60 rounded-xl px-2.5 py-1">
+                <span class="text-[11px] text-purple-700 font-medium flex items-center">
+                  <i class="fa-solid fa-location-crosshairs mr-1 text-[10px]"></i>GPS Log
+                </span>
+                <span class="font-mono font-bold text-purple-700 text-[11px]" id="val-visit-gps">0 Verified</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Micro Sparkline -->
+          <div class="h-7 w-full pt-1">
+            <svg viewBox="0 0 140 28" class="w-full h-full" preserveAspectRatio="none">
+              <path d="M0,24 L40,24 L50,12 L60,24 L72,6 L84,24 L140,24" fill="none" stroke="#8b5cf6" stroke-width="2"
+                stroke-linecap="round" />
+              <circle cx="72" cy="6" r="2.5" fill="#8b5cf6" />
+            </svg>
+          </div>
+        </article>
+
+        <!-- ================= CARD 4: LEADS (NO PIPELINE, 3 CLEAN ROWS) ================= -->
+        <article
+          class="bg-gradient-to-br from-[#594fe7] to-[#4b40dc] text-white rounded-[26px] p-4 shadow-card-colored flex flex-col justify-between relative overflow-hidden tap-effect">
+          <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+
+          <div>
+            <!-- Header (NO Pipeline text) -->
+            <div class="flex items-center space-x-2.5 pb-2">
+              <div
+                class="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-xs shadow-inner">
+                <i class="fa-solid fa-filter text-xs"></i>
+              </div>
+              <span class="text-xs font-bold text-white/90 tracking-wide uppercase">LEADS</span>
+            </div>
+
+            <!-- Big Stat Hero: New Leads -->
+            <div>
+              <div class="text-[10px] font-semibold text-white/70 uppercase tracking-wider">New Leads</div>
+              <div class="text-2xl font-extrabold font-mono text-white tracking-tight mt-0.5" id="val-leads-matured">
+                18
+              </div>
+            </div>
+
+            <!-- 3 Clean Rows: New, Followup, Quotation -->
+            <div class="mt-3 space-y-1.5 text-xs">
+              <div
+                class="flex items-center justify-between bg-black/15 rounded-xl px-2.5 py-1 backdrop-blur-sm border border-white/10">
+                <span class="text-[11px] text-white/80 flex items-center">
+                  <span class="w-1.5 h-1.5 rounded-full bg-cyan-300 mr-1.5"></span>New
+                </span>
+                <span class="font-mono font-bold text-white text-[11px]" id="val-leads-new">0</span>
+              </div>
+
+              <div
+                class="flex items-center justify-between bg-black/15 rounded-xl px-2.5 py-1 backdrop-blur-sm border border-white/10">
+                <span class="text-[11px] text-white/80 flex items-center">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-300 mr-1.5"></span>Followup
+                </span>
+                <span class="font-mono font-bold text-white text-[11px]" id="val-leads-followup">0</span>
+              </div>
+
+              <div
+                class="flex items-center justify-between bg-black/15 rounded-xl px-2.5 py-1 backdrop-blur-sm border border-white/10">
+                <span class="text-[11px] text-white/80 flex items-center">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 mr-1.5"></span>Quotation
+                </span>
+                <span class="font-mono font-bold text-white text-[11px]" id="val-leads-quotation">0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Micro Leads Sparkline -->
+          <div class="h-7 w-full pt-1">
+            <svg viewBox="0 0 140 28" class="w-full h-full" preserveAspectRatio="none">
+              <path d="M0,24 L45,24 L65,8 L85,24 L140,24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"
+                stroke-linecap="round" />
+              <circle cx="65" cy="8" r="2.5" fill="#ffffff" />
+            </svg>
+          </div>
+        </article>
+
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- 'MY ATTENDANCE' SECTION: CLEAN HEADER & SQUARE DATE BOXES -->
+      <!-- ======================================================== -->
+      <section
+        class="bg-white rounded-[28px] p-4 md:p-5 border border-slate-200/90 shadow-card-light space-y-4 relative overflow-hidden">
+
+        <!-- Clean Header (No Nepali month name, no 31 days) -->
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div class="flex items-center space-x-2.5">
+            <div
+              class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-erp-brandIndigo to-erp-brandViolet text-white flex items-center justify-center text-sm shadow-md shadow-indigo-500/20">
+              <i class="fa-solid fa-fingerprint"></i>
+            </div>
+            <div>
+              <h3 class="text-xs font-black text-slate-900 tracking-tight uppercase">My Attendance</h3>
+              <p class="text-[11px] font-medium text-slate-400 mt-0.5">
+                Monthly Record & Status
+              </p>
+            </div>
+          </div>
+
+          <!-- Dual Mode Toggle (Week vs All Month) -->
+          <div class="bg-slate-100 p-1 rounded-xl flex items-center space-x-1">
+            <button id="view-mode-week" onclick="toggleCalendarView('week')"
+              class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-white text-erp-brandIndigo shadow-sm transition-all flex items-center gap-1">
+              <i class="fa-solid fa-bars-staggered text-[9px]"></i>
+              <span>Week</span>
+            </button>
+            <button id="view-mode-month" onclick="toggleCalendarView('month')"
+              class="px-2.5 py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-slate-700 transition-all flex items-center gap-1">
+              <i class="fa-solid fa-calendar-days text-[9px]"></i>
+              <span>Month</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Month Navigation: August 2026 -->
+        <div class="flex items-center justify-between px-0.5">
+          <div class="flex items-center space-x-2">
+            <button onclick="navigateMonth(-1)"
+              class="w-7 h-7 rounded-lg bg-slate-50 border border-slate-200/70 hover:bg-slate-100 flex items-center justify-center text-slate-500 text-[10px] active:scale-95 transition-all">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <span class="text-xs font-extrabold text-slate-800" id="month-display-label">August 2026</span>
+            <button onclick="navigateMonth(1)"
+              class="w-7 h-7 rounded-lg bg-slate-50 border border-slate-200/70 hover:bg-slate-100 flex items-center justify-center text-slate-500 text-[10px] active:scale-95 transition-all">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+
+          <div
+            class="flex items-center space-x-1 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-bold">
+            <i class="fa-solid fa-shield-halved text-[9px]"></i>
+            <span>96.8% Score</span>
+          </div>
+        </div>
+
+        <!-- VIEW A: HORIZONTAL WEEK SCROLLER WITH DAY NAME OUTSIDE & SQUARE BOXES WITH SYMBOLS INSIDE -->
+        <div id="attendance-week-view" class="transition-all duration-300">
+          <div class="flex items-center justify-between gap-1.5 overflow-x-auto no-scrollbar py-1"
+            id="week-strip-container">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <!-- VIEW B: FULL MONTH MATRIX -->
+        <div id="attendance-month-view" class="hidden transition-all duration-300 space-y-2">
+          <div
+            class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 py-1 border-b border-slate-100">
+            <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span
+              class="text-erp-brandIndigo">Sa</span>
+          </div>
+          <div class="grid grid-cols-7 gap-1.5" id="month-matrix-container">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <!-- SELECTED DATE TELEMETRY INSPECTOR -->
+        <div
+          class="bg-gradient-to-br from-slate-50 to-indigo-50/50 rounded-2xl p-3.5 border border-indigo-100/70 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+              <span class="text-xs font-extrabold text-slate-800" id="selected-day-title">17 Aug 2026 (Today)</span>
+            </div>
+            <span
+              class="text-[10px] font-extrabold text-erp-brandIndigo bg-white border border-indigo-100 shadow-sm px-2 py-0.5 rounded-full flex items-center gap-1">
+              <i class="fa-solid fa-location-crosshairs text-[9px]"></i>
+              <span id="selected-day-venue">Route #4 · Biratnagar</span>
+            </span>
+          </div>
+
+          <!-- 3-Column Mini Telemetry Cards -->
+          <div class="grid grid-cols-3 gap-2 pt-0.5">
+            <div class="bg-white rounded-xl p-2 border border-slate-100 shadow-sm">
+              <div class="text-[9px] font-semibold text-slate-400 uppercase">Punch-In</div>
+              <div class="text-xs font-extrabold text-slate-800 font-mono mt-0.5 flex items-center gap-1">
+                <i class="fa-solid fa-arrow-right-to-bracket text-emerald-500 text-[10px]"></i>
+                <span id="selected-punch-in">10:27:01</span>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-xl p-2 border border-slate-100 shadow-sm">
+              <div class="text-[9px] font-semibold text-slate-400 uppercase">Punch-Out</div>
+              <div class="text-xs font-extrabold text-slate-800 font-mono mt-0.5 flex items-center gap-1">
+                <i class="fa-solid fa-arrow-right-from-bracket text-amber-500 text-[10px]"></i>
+                <span id="selected-punch-out">Active Shift</span>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-xl p-2 border border-slate-100 shadow-sm">
+              <div class="text-[9px] font-semibold text-slate-400 uppercase">Duty Span</div>
+              <div class="text-xs font-extrabold text-erp-brandIndigo font-mono mt-0.5 flex items-center gap-1">
+                <i class="fa-solid fa-hourglass-half text-erp-brandIndigo text-[10px]"></i>
+                <span id="selected-duty-span">10h 19m 42s</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Monthly Breakdown Ledger -->
+        <div
+          class="pt-1 flex items-center justify-between text-[11px] font-medium text-slate-600 border-t border-slate-100">
+          <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span>Present: <b class="font-mono text-slate-900 font-extrabold">21</b></span>
+            </div>
+            <div class="flex items-center space-x-1.5">
+              <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+              <span>Holiday: <b class="font-mono text-slate-900 font-extrabold">4</b></span>
+            </div>
+            <div class="flex items-center space-x-1.5">
+              <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+              <span>Absent: <b class="font-mono text-slate-900 font-extrabold">1</b></span>
+            </div>
+          </div>
+
+          <button onclick="showToast('Exporting Monthly Attendance PDF')"
+            class="text-xs font-bold text-erp-brandIndigo hover:text-indigo-800 transition-colors flex items-center gap-1">
+            <span>Report</span>
+            <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+          </button>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- FLOATING ASSISTANT WITH "Hi! need help?" SPEECH BUBBLE -->
+    <div class="absolute right-4 bottom-[92px] z-30 flex flex-col items-end pointer-events-auto">
+
+      <!-- Speech Tooltip -->
+      <div onclick="toggleHelpModal()"
+        class="bg-white border border-slate-200/90 rounded-2xl px-3 py-1.5 shadow-lg flex items-center space-x-1.5 mb-1.5 cursor-pointer hover:scale-105 active:scale-95 transition-all">
+        <span class="text-xs font-bold text-slate-800">Hi! need help?</span>
+        <span class="flex space-x-0.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-erp-brandIndigo animate-bounce"></span>
+          <span class="w-1.5 h-1.5 rounded-full bg-erp-brandIndigo animate-bounce" style="animation-delay: 0.2s"></span>
+          <span class="w-1.5 h-1.5 rounded-full bg-erp-brandIndigo animate-bounce" style="animation-delay: 0.4s"></span>
+        </span>
+      </div>
+
+      <!-- Character Avatar -->
+      <div class="relative cursor-pointer" onclick="toggleHelpModal()">
+        <div
+          class="w-[50px] h-[50px] rounded-full bg-indigo-50 border-2 border-white shadow-xl overflow-hidden flex items-center justify-center hover:scale-105 active:scale-95 transition-transform">
+          <svg viewBox="0 0 100 100" class="w-12 h-12">
+            <path d="M22,50 C18,22 32,10 50,10 C68,10 82,22 78,50 C78,72 68,82 68,82 L32,82 C32,82 22,72 22,50 Z"
+              fill="#1e293b" />
+            <ellipse cx="50" cy="52" rx="19" ry="21" fill="#fcd34d" />
+            <path d="M30,38 C42,28 58,28 70,38 C65,48 55,40 45,42 C38,44 33,42 30,38 Z" fill="#0f172a" />
+            <circle cx="42" cy="49" r="3.5" fill="#1e293b" />
+            <circle cx="58" cy="49" r="3.5" fill="#1e293b" />
+            <circle cx="43" cy="48" r="1" fill="#ffffff" />
+            <circle cx="59" cy="48" r="1" fill="#ffffff" />
+            <path d="M46,61 Q50,65 54,61" stroke="#92400e" stroke-width="2" fill="none" stroke-linecap="round" />
+            <path d="M30,80 L42,68 L50,75 L58,68 L70,80 Z" fill="#5851ea" />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. SCOOPED CONCAVE NOTCH BOTTOM BAR (MATCHING ATTACHED IMAGE) -->
+    <div class="relative w-full shrink-0 z-20 dock-shadow-filter">
+
+      <!-- Scalable Smooth Cutout SVG Background -->
+      <svg class="w-full h-[76px] block text-white" viewBox="0 0 400 76" preserveAspectRatio="none" fill="currentColor">
+        <path d="M 0,16
+                 Q 0,0 16,0
+                 L 142,0
+                 C 160,0 164,36 200,36
+                 C 236,36 240,0 258,0
+                 L 384,0
+                 Q 400,0 400,16
+                 L 400,76
+                 L 0,76
+                 Z" />
+      </svg>
+
+      <!-- Center Floating Elevated Circular Action Button -->
+      <div class="absolute left-1/2 -top-5 -translate-x-1/2 flex items-center justify-center z-30">
+        <button onclick="toggleActionMenu()"
+          class="w-[54px] h-[54px] rounded-full bg-[#5851ea] text-white flex items-center justify-center shadow-[0_8px_20px_rgba(88,81,234,0.45)] hover:bg-[#4942d9] active:scale-90 transition-all focus:outline-none"
+          aria-label="New Quick Action">
+          <i id="plus-icon" class="fa-solid fa-plus text-xl font-light transition-transform duration-300"></i>
+        </button>
+      </div>
+
+      <!-- Navigation Icons Overlay (2 on Left, 2 on Right) -->
+      <div class="absolute inset-0 px-6 pt-3 flex items-center justify-between pointer-events-none z-20">
+
+        <!-- Left Wing: Order & Collection -->
+        <div class="flex items-center space-x-7 pointer-events-auto">
+          <!-- Icon 1: Order (Active State with soft pill background matching the screenshot) -->
+          <button onclick="setActiveNav(this, 'Orders')"
+            class="nav-item w-11 h-11 rounded-2xl bg-indigo-50/80 text-[#5851ea] flex items-center justify-center transition-all tap-effect"
+            title="Orders">
+            <i class="fa-solid fa-house text-[19px]"></i>
+          </button>
+
+          <!-- Icon 2: Collection / Chat -->
+          <button onclick="setActiveNav(this, 'Collection')"
+            class="nav-item w-11 h-11 rounded-2xl text-slate-400 hover:text-slate-700 flex items-center justify-center transition-all tap-effect"
+            title="Collection">
+            <i class="fa-regular fa-comment-dots text-[20px]"></i>
+          </button>
+        </div>
+
+        <!-- Center clearance buffer for the elevated notched FAB -->
+        <div class="w-14"></div>
+
+        <!-- Right Wing: Visits (Lucide map-pinned) & Profile / Leads -->
+        <div class="flex items-center space-x-7 pointer-events-auto">
+          <!-- Icon 3: Visits (Lucide map-pinned) -->
+          <button onclick="setActiveNav(this, 'Visits')"
+            class="nav-item w-11 h-11 rounded-2xl text-slate-400 hover:text-slate-700 flex items-center justify-center transition-all tap-effect"
+            title="Visits">
+            <i data-lucide="map-pinned" class="w-[21px] h-[21px] stroke-[1.85]"></i>
+          </button>
+
+          <!-- Icon 4: Profile / Leads -->
+          <button onclick="setActiveNav(this, 'Leads')"
+            class="nav-item w-11 h-11 rounded-2xl text-slate-400 hover:text-slate-700 flex items-center justify-center transition-all tap-effect"
+            title="Profile / Leads">
+            <i class="fa-regular fa-user text-[19px]"></i>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- IPHONE HOME INDICATOR BAR -->
+    <div class="h-4 bg-white shrink-0 flex items-center justify-center">
+      <div class="w-32 h-1 bg-slate-900 rounded-full"></div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- SLIDE-OVER NAVIGATION MENU DRAWER (LEFT SIDE) -->
+    <!-- ======================================================== -->
+    <div id="sidebar-drawer" class="pointer-events-none fixed md:absolute inset-0 z-50 overflow-hidden">
+      <!-- Backdrop -->
+      <div id="sidebar-drawer-overlay" onclick="toggleSidebarMenu()"
+        class="opacity-0 absolute inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity duration-300"></div>
+
+      <!-- Left Slide-in Panel -->
+      <div id="sidebar-drawer-panel"
+        class="-translate-x-full absolute top-0 bottom-0 left-0 w-[84%] max-w-[340px] bg-white shadow-2xl flex flex-col z-10 transition-transform duration-300 ease-out border-r border-slate-200/80">
+
+        <!-- Top Profile & Header Section -->
+        <div
+          class="bg-gradient-to-br from-[#544be8] to-[#4339d2] text-white p-5 pt-7 relative overflow-hidden shrink-0">
+          <!-- Background decoration -->
+          <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+
+          <!-- Close Drawer Button -->
+          <button onclick="toggleSidebarMenu()"
+            class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 text-white flex items-center justify-center transition-all">
+            <i class="fa-solid fa-xmark text-sm"></i>
+          </button>
+
+          <!-- User Info Row -->
+          <div class="flex items-center space-x-3.5 relative z-10">
+            <div class="relative">
+              <img
+                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=140&h=140&q=80"
+                alt="User Profile" class="w-13 h-13 rounded-2xl object-cover border-2 border-white/60 shadow-lg">
+              <span
+                class="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-400 border-2 border-[#544be8] rounded-full"></span>
+            </div>
+            <div>
+              <div class="flex items-center gap-1.5">
+                <h3 class="font-extrabold text-base tracking-tight leading-tight">Jagat Ovi</h3>
+                <span
+                  class="px-1.5 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 text-[9px] font-bold border border-emerald-300/30 uppercase">Active</span>
+              </div>
+              <p class="text-[11px] text-white/80 font-medium mt-0.5">Regional Executive</p>
+              <div class="text-[10px] text-white/60 font-mono flex items-center gap-1 mt-0.5">
+                <i class="fa-solid fa-id-badge text-[9px]"></i>
+                <span>EMP-94021 · Biratnagar</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Shift Status Mini Bar -->
+          <div class="mt-4 pt-3 border-t border-white/15 flex items-center justify-between text-[11px]">
+            <span class="text-white/80 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-rose-400 live-beacon"></span>
+              <span>Duty: <b class="font-mono font-bold text-white" id="drawer-duty-timer">10:19:42</b></span>
+            </span>
+            <span class="text-[10px] font-extrabold text-indigo-100 bg-white/15 px-2 py-0.5 rounded-full">Route
+              #4</span>
+          </div>
+        </div>
+
+        <!-- Scrollable Navigation Items -->
+        <div class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-5 text-xs">
+
+          <!-- GROUP 1: CORE ERP MODULES -->
+          <div>
+            <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 mb-1.5">Core ERP</div>
+            <div class="space-y-1">
+              <button onclick="handleDrawerNav('Dashboard Overview')"
+                class="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-indigo-50/70 text-erp-brandIndigo font-bold transition-all">
+                <div class="flex items-center space-x-3">
+                  <div
+                    class="w-7 h-7 rounded-lg bg-erp-brandIndigo text-white flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-gauge-high"></i>
+                  </div>
+                  <span>Dashboard Overview</span>
+                </div>
+                <i class="fa-solid fa-chevron-right text-[10px] text-erp-brandIndigo"></i>
+              </button>
+
+              <button onclick="handleDrawerNav('Orders & Billing')"
+                class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold transition-all">
+                <div class="flex items-center space-x-3">
+                  <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                  </div>
+                  <span>Orders & Billing</span>
+                </div>
+                <span class="text-[10px] bg-indigo-100 text-erp-brandIndigo font-bold px-1.5 py-0.5 rounded-md">8</span>
+              </button>
+
+              <button onclick="handleDrawerNav('Collections & Receipts')"
+                class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold transition-all">
+                <div class="flex items-center space-x-3">
+                  <div
+                    class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-sack-dollar"></i>
+                  </div>
+                  <span>Collections & Receipts</span>
+                </div>
+                <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+              </button>
+
+              <button onclick="handleDrawerNav('Visits & Field Logs')"
+                class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold transition-all">
+                <div class="flex items-center space-x-3">
+                  <div class="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center text-xs">
+                    <i data-lucide="map-pinned" class="w-4 h-4"></i>
+                  </div>
+                  <span>Visits & Field Logs</span>
+                </div>
+                <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+              </button>
+
+              <button onclick="handleDrawerNav('Leads & Pipeline CRM')"
+                class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold transition-all">
+                <div class="flex items-center space-x-3">
+                  <div class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-filter"></i>
+                  </div>
+                  <span>Leads & Pipeline CRM</span>
+                </div>
+                <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- GROUP 2: FIELD OPERATIONS & INVENTORY -->
+          <div>
+            <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 mb-1.5">Field Operations
+            </div>
+            <div class="space-y-1">
+              <button onclick="handleDrawerNav('Beat & Route Planning')"
+                class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold transition-all">
+                <div class="flex items-center space-x-3">
+                  <div class="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-route"></i>
+                  </div>
+                  <span>Beat & Route Plans</span>
+                </div>
+                <span class="text-[10px] bg-slate-100 text-slate-600 font-bold px-1.5 py-0.5 rounded-md">Route 4</span>
+              </button>
+
+              <button onclick="handleDrawerNav('Product Catalog & Prices')"
+                class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold transition-all">
+                <div class="flex items-center space-x-3">
+                  <div class="w-7 h-7 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                  </div>
+                  <span>Product Catalog & Rates</span>
+                </div>
+                <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+              </button>
+
+              <button onclick="handleDrawerNav('Customer Directory')"
+                class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold transition-all">
+                <div class="flex items-center space-x-3">
+                  <div class="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-address-book"></i>
+                  </div>
+                  <span>Customer Directory</span>
+                </div>
+                <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- GROUP 3: ATTENDANCE & HR -->
+          <div>
+            <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 mb-1.5">People & HR
+            </div>
+            <div class="space-y-1">
+              <button onclick="handleDrawerNav('My Biometric Attendance')"
+                class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold transition-all">
+                <div class="flex items-center space-x-3">
+                  <div
+                    class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-fingerprint"></i>
+                  </div>
+                  <span>Attendance & Leaves</span>
+                </div>
+                <span
+                  class="text-[10px] text-emerald-700 bg-emerald-100 font-bold px-1.5 py-0.5 rounded-md">96.8%</span>
+              </button>
+
+              <button onclick="handleDrawerNav('Expense Claims')"
+                class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold transition-all">
+                <div class="flex items-center space-x-3">
+                  <div class="w-7 h-7 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                  </div>
+                  <span>TA / DA Expense Claims</span>
+                </div>
+                <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- GROUP 4: SYSTEM & PREFERENCES -->
+          <div>
+            <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 mb-1.5">System</div>
+            <div class="space-y-1">
+              <button onclick="handleDrawerNav('Sync Data')"
+                class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold transition-all">
+                <div class="flex items-center space-x-3">
+                  <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                  </div>
+                  <span>Offline Sync & Cache</span>
+                </div>
+                <span class="text-[10px] text-emerald-600 font-bold">Synced</span>
+              </button>
+
+              <button onclick="handleDrawerNav('Settings')"
+                class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-100 font-semibold transition-all">
+                <div class="flex items-center space-x-3">
+                  <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-gear"></i>
+                  </div>
+                  <span>App Preferences</span>
+                </div>
+                <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Drawer Footer: Logout & Version -->
+        <div class="p-4 border-t border-slate-100 bg-slate-50/70 shrink-0 flex items-center justify-between">
+          <button onclick="handleDrawerNav('Sign Out')"
+            class="flex items-center space-x-2 text-rose-600 hover:text-rose-700 font-bold text-xs py-1 px-2 rounded-lg hover:bg-rose-50 transition-colors">
+            <i class="fa-solid fa-right-from-bracket text-xs"></i>
+            <span>Log Out</span>
+          </button>
+          <span class="text-[10px] font-mono text-slate-400">v3.4.2 · Build 118</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- QUICK ACTION MODAL DRAWER -->
+    <div id="action-drawer"
+      class="hidden absolute inset-0 z-40 bg-slate-900/40 backdrop-blur-sm flex flex-col justify-end transition-all">
+      <div class="bg-white rounded-t-[32px] p-6 border-t border-slate-200 shadow-2xl space-y-4 pb-8">
+        <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto"></div>
+
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-extrabold text-slate-900">New Field Action</h3>
+            <p class="text-xs text-slate-500">Fast action logging with current GPS</p>
+          </div>
+          <button onclick="toggleActionMenu()"
+            class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-1">
+          <button onclick="recordAction('Book New Order')"
+            class="p-3.5 rounded-2xl bg-indigo-50 border border-indigo-100 text-left transition-all active:scale-95 flex items-center space-x-3">
+            <div
+              class="w-10 h-10 rounded-xl bg-erp-brandIndigo text-white flex items-center justify-center font-bold text-sm shadow">
+              <i class="fa-solid fa-cart-plus"></i>
+            </div>
+            <div>
+              <div class="font-bold text-xs text-slate-800">New Order</div>
+              <div class="text-[10px] text-slate-500">Scan & Add SKU</div>
+            </div>
+          </button>
+
+          <button onclick="recordAction('Collect Payment')"
+            class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-100 text-left transition-all active:scale-95 flex items-center space-x-3">
+            <div
+              class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow">
+              <i class="fa-solid fa-receipt"></i>
+            </div>
+            <div>
+              <div class="font-bold text-xs text-slate-800">Collection</div>
+              <div class="text-[10px] text-slate-500">Cash / Bank</div>
+            </div>
+          </button>
+
+          <button onclick="recordAction('Log Store Visit')"
+            class="p-3.5 rounded-2xl bg-purple-50 border border-purple-100 text-left transition-all active:scale-95 flex items-center space-x-3">
+            <div
+              class="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold text-sm shadow">
+              <i data-lucide="map-pinned" class="w-5 h-5 text-white"></i>
+            </div>
+            <div>
+              <div class="font-bold text-xs text-slate-800">Store Visit</div>
+              <div class="text-[10px] text-slate-500">GPS Check-in</div>
+            </div>
+          </button>
+
+          <button onclick="recordAction('Add New Lead')"
+            class="p-3.5 rounded-2xl bg-amber-50 border border-amber-100 text-left transition-all active:scale-95 flex items-center space-x-3">
+            <div
+              class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-sm shadow">
+              <i class="fa-solid fa-user-plus"></i>
+            </div>
+            <div>
+              <div class="font-bold text-xs text-slate-800">Add Lead</div>
+              <div class="text-[10px] text-slate-500">New Merchant</div>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI & FIELD ASSISTANT DRAWER -->
+    <div id="help-drawer"
+      class="hidden absolute inset-0 z-40 bg-slate-900/40 backdrop-blur-sm flex flex-col justify-end transition-all">
+      <div class="bg-white rounded-t-[32px] p-5 border-t border-slate-200 shadow-2xl space-y-3 pb-8">
+        <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto"></div>
+
+        <div class="flex items-center justify-between pb-1">
+          <div class="flex items-center space-x-2.5">
+            <div
+              class="w-9 h-9 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-700">
+              <i class="fa-solid fa-headset text-sm"></i>
+            </div>
+            <div>
+              <h3 class="text-sm font-extrabold text-slate-900">Field Support Assistant</h3>
+              <p class="text-[10px] text-emerald-600 font-semibold">Online · Regional Desk</p>
+            </div>
+          </div>
+          <button onclick="toggleHelpModal()"
+            class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200">
+            <i class="fa-solid fa-xmark text-xs"></i>
+          </button>
+        </div>
+
+        <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 text-xs text-slate-600 space-y-2">
+          <p class="font-semibold text-slate-800">Hi Jagat! Quick assistance topics:</p>
+          <div class="space-y-1.5 pt-1">
+            <button onclick="handleQuickHelp('GPS Biometric Punch')"
+              class="w-full text-left p-2.5 rounded-xl bg-white border border-slate-200/80 font-medium text-[11px] text-erp-brandIndigo hover:bg-indigo-50 flex justify-between items-center transition-colors">
+              <span>📍 Biometric attendance verification</span>
+              <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+            </button>
+            <button onclick="handleQuickHelp('Catalog offline sync')"
+              class="w-full text-left p-2.5 rounded-xl bg-white border border-slate-200/80 font-medium text-[11px] text-erp-brandIndigo hover:bg-indigo-50 flex justify-between items-center transition-colors">
+              <span>🔄 Force sync today's SKU rates</span>
+              <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+            </button>
+            <button onclick="handleQuickHelp('Request manual punch out')"
+              class="w-full text-left p-2.5 rounded-xl bg-white border border-slate-200/80 font-medium text-[11px] text-erp-brandIndigo hover:bg-indigo-50 flex justify-between items-center transition-colors">
+              <span>📝 Request shift early punch-out</span>
+              <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast-pill"
+      class="hidden absolute top-16 left-5 right-5 z-50 bg-slate-900/95 backdrop-blur text-white text-xs px-4 py-3 rounded-2xl shadow-xl flex items-center justify-between border border-slate-700/80">
+      <div class="flex items-center space-x-2.5">
+        <i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+        <span id="toast-text" class="font-medium text-[11px]">Action Completed</span>
+      </div>
+      <button onclick="hideToast()" class="text-slate-400 hover:text-white">
+        <i class="fa-solid fa-xmark text-xs"></i>
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    // 1. DATA REPOSITORY - CLEAN NUMBERS (DEFAULT NRS, NO CURRENCY SYMBOL)
+    const metricsData = {
+      'T': {
+        orderBilled: '0.00',
+        orderPending: '0.00',
+        orderApproved: '0.00',
+        orderDeclined: '0.00',
+        colReceived: '0.00',
+        colCash: '0.00',
+        colBank: '0.00',
+        visitTotal: '0',
+        visitOrder: '0 (0.00)',
+        visitCol: '0 (0.00)',
+        visitGps: '0 Verified',
+        leadsMatured: '18',
+        leadsNew: '0',
+        leadsFollowup: '0',
+        leadsQuotation: '0'
+      },
+      'W': {
+        orderBilled: '18,420',
+        orderPending: '2,150',
+        orderApproved: '15,400',
+        orderDeclined: '870',
+        colReceived: '14,800',
+        colCash: '4,200',
+        colBank: '10,600',
+        visitTotal: '16',
+        visitOrder: '12 (14.2k)',
+        visitCol: '8 (9.5k)',
+        visitGps: '16 Verified',
+        leadsMatured: '18',
+        leadsNew: '8',
+        leadsFollowup: '6',
+        leadsQuotation: '3'
+      },
+      'M': {
+        orderBilled: '85,400',
+        orderPending: '6,400',
+        orderApproved: '74,000',
+        orderDeclined: '5,000',
+        colReceived: '72,252',
+        colCash: '22,200',
+        colBank: '50,000',
+        visitTotal: '68',
+        visitOrder: '54 (58.4k)',
+        visitCol: '36 (41.2k)',
+        visitGps: '68 Verified',
+        leadsMatured: '18',
+        leadsNew: '24',
+        leadsFollowup: '17',
+        leadsQuotation: '9'
+      }
+    };
+
+    // 2. MASTER HORIZON SWITCHER
+    function setGlobalHorizon(period, btn) {
+      document.querySelectorAll('.horizon-btn').forEach(b => {
+        b.classList.remove('bg-white', 'text-erp-brandIndigo', 'shadow-sm');
+        b.classList.add('text-slate-500');
+      });
+      btn.classList.add('bg-white', 'text-erp-brandIndigo', 'shadow-sm');
+      btn.classList.remove('text-slate-500');
+
+      const data = metricsData[period];
+      document.getElementById('val-order-billed').innerText = data.orderBilled;
+      document.getElementById('val-order-pending').innerText = data.orderPending;
+      document.getElementById('val-order-approved').innerText = data.orderApproved;
+      document.getElementById('val-order-declined').innerText = data.orderDeclined;
+
+      document.getElementById('val-col-received').innerText = data.colReceived;
+      document.getElementById('val-col-cash').innerText = data.colCash;
+      document.getElementById('val-col-bank').innerText = data.colBank;
+
+      document.getElementById('val-visit-total').innerText = data.visitTotal;
+      document.getElementById('val-visit-order').innerText = data.visitOrder;
+      document.getElementById('val-visit-col').innerText = data.visitCol;
+      document.getElementById('val-visit-gps').innerText = data.visitGps;
+
+      // Update Leads
+      document.getElementById('val-leads-matured').innerText = data.leadsMatured;
+      document.getElementById('val-leads-new').innerText = data.leadsNew;
+      document.getElementById('val-leads-followup').innerText = data.leadsFollowup;
+      document.getElementById('val-leads-quotation').innerText = data.leadsQuotation;
+
+      showToast(`Showing stats for: ${period === 'T' ? 'Today' : period === 'W' ? 'This Week' : 'This Month'}`);
+    }
+
+    // 3. ATTENDANCE ENGINE (DAY NAME OUTSIDE, PURE SQUARE BOXES WITH SYMBOLS INSIDE)
+    const attendanceRecords = {};
+    const weekDayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    for (let day = 1; day <= 31; day++) {
+      const dayIndex = (day + 1) % 7;
+      const isSaturday = dayIndex === 6;
+      let status = 'present';
+
+      if (day > 17) {
+        status = 'upcoming';
+      } else if (isSaturday) {
+        status = 'holiday';
+      } else if (day === 8) {
+        status = 'absent';
+      } else if (day === 14) {
+        status = 'halfday';
+      }
+
+      attendanceRecords[day] = {
+        dayNum: day,
+        dayName: weekDayNames[dayIndex],
+        status: status,
+        punchIn: (day === 17) ? '10:27:01' : (status === 'present' ? '09:48 AM' : (status === 'halfday' ? '10:15 AM' : '--:--')),
+        punchOut: (day === 17) ? 'Active Shift' : (status === 'present' ? '07:15 PM' : (status === 'halfday' ? '02:30 PM' : '--:--')),
+        dutyHours: (day === 17) ? '10h 19m 42s' : (status === 'present' ? '9h 27m' : (status === 'halfday' ? '4h 15m' : '0h 0m')),
+        venue: (day === 17) ? 'Route #4 · Biratnagar' : (status === 'present' ? 'Main Retail District' : 'Home')
+      };
+    }
+
+    let activeAttendanceDay = 17; // Today (17 Aug)
+
+    // Render Week View: Day Name Outside, Pure Square Box with Present Symbol Inside
+    function renderWeekScroller() {
+      const container = document.getElementById('week-strip-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const start = 14;
+      const end = 20;
+
+      for (let day = start; day <= end; day++) {
+        const item = attendanceRecords[day];
+        const isSelected = day === activeAttendanceDay;
+
+        // Outer column wrapper holding Day Name outside, and square box
+        const colWrapper = document.createElement('div');
+        colWrapper.className = 'flex flex-col items-center space-y-1.5 flex-1 min-w-[46px]';
+
+        // 1. Day Name OUTSIDE the square box
+        const dayLabel = document.createElement('span');
+        dayLabel.className = `text-[10px] font-bold uppercase tracking-wider ${isSelected ? 'text-erp-brandIndigo font-extrabold' : 'text-slate-400'}`;
+        dayLabel.innerText = item.dayName;
+        colWrapper.appendChild(dayLabel);
+
+        // 2. Pure Square Box (aspect-square) with date number & present symbol INSIDE
+        const squareBox = document.createElement('button');
+        squareBox.onclick = () => selectDay(day);
+
+        let boxStyles = '';
+        let symbolHtml = '';
+
+        if (isSelected) {
+          boxStyles = 'bg-gradient-to-br from-[#5851ea] to-[#453ed1] text-white shadow-md shadow-indigo-500/30 ring-2 ring-indigo-400 border border-transparent';
+          symbolHtml = `<i class="fa-solid fa-circle-check text-[10px] text-emerald-300"></i>`;
+        } else if (item.status === 'present') {
+          boxStyles = 'bg-emerald-50/70 border border-emerald-200/90 text-slate-800 hover:border-emerald-300';
+          symbolHtml = `<i class="fa-solid fa-circle-check text-[9px] text-emerald-600"></i>`;
+        } else if (item.status === 'holiday') {
+          boxStyles = 'bg-amber-50/70 border border-amber-200/90 text-slate-800 hover:border-amber-300';
+          symbolHtml = `<i class="fa-solid fa-mug-hot text-[8px] text-amber-600"></i>`;
+        } else if (item.status === 'absent') {
+          boxStyles = 'bg-rose-50/70 border border-rose-200/90 text-slate-800 hover:border-rose-300';
+          symbolHtml = `<i class="fa-solid fa-circle-xmark text-[9px] text-rose-500"></i>`;
+        } else {
+          boxStyles = 'bg-slate-50 border border-slate-200/70 text-slate-400 hover:bg-slate-100';
+          symbolHtml = `<span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>`;
+        }
+
+        squareBox.className = `w-11 h-11 aspect-square rounded-2xl flex flex-col items-center justify-center p-1 transition-all tap-effect ${boxStyles}`;
+        squareBox.innerHTML = `
+          <span class="text-xs font-black font-mono leading-none mb-1 ${isSelected ? 'text-white' : 'text-slate-800'}">${item.dayNum}</span>
+          <div class="h-3 flex items-center justify-center">
+            ${symbolHtml}
+          </div>
+        `;
+
+        colWrapper.appendChild(squareBox);
+        container.appendChild(colWrapper);
+      }
+    }
+
+    // Render Month View: Square Matrix with Inside Symbols
+    function renderMonthMatrix() {
+      const container = document.getElementById('month-matrix-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      for (let day = 1; day <= 31; day++) {
+        const item = attendanceRecords[day];
+        const isSelected = day === activeAttendanceDay;
+
+        const cell = document.createElement('button');
+        cell.onclick = () => selectDay(day);
+
+        let style = 'bg-slate-50 text-slate-600 border border-slate-200/80';
+        let iconHtml = '';
+
+        if (isSelected) {
+          style = 'bg-erp-brandIndigo text-white font-extrabold shadow-md ring-2 ring-indigo-300';
+          iconHtml = '<i class="fa-solid fa-circle-check text-[7px] text-emerald-300"></i>';
+        } else if (item.status === 'present') {
+          style = 'bg-emerald-50 text-emerald-800 border border-emerald-200/80';
+          iconHtml = '<i class="fa-solid fa-circle-check text-[7px] text-emerald-500"></i>';
+        } else if (item.status === 'holiday') {
+          style = 'bg-amber-50 text-amber-800 border border-amber-200/80';
+          iconHtml = '<i class="fa-solid fa-mug-hot text-[6px] text-amber-500"></i>';
+        } else if (item.status === 'absent') {
+          style = 'bg-rose-50 text-rose-800 border border-rose-200/80';
+          iconHtml = '<i class="fa-solid fa-circle-xmark text-[7px] text-rose-500"></i>';
+        } else {
+          style = 'bg-slate-100/60 text-slate-400 border border-transparent';
+          iconHtml = '<span class="w-1 h-1 rounded-full bg-slate-300"></span>';
+        }
+
+        cell.className = `aspect-square h-9 rounded-xl flex flex-col items-center justify-center text-[10px] font-mono font-bold transition-transform hover:scale-105 active:scale-95 ${style} relative`;
+        cell.innerHTML = `
+          <span class="leading-none mb-0.5">${day}</span>
+          ${iconHtml}
+        `;
+
+        container.appendChild(cell);
+      }
+    }
+
+    function selectDay(day) {
+      activeAttendanceDay = day;
+      const rec = attendanceRecords[day];
+      const isToday = day === 17;
+
+      document.getElementById('selected-day-title').innerText = `${day} Aug 2026 ${isToday ? '(Today)' : ''}`;
+      document.getElementById('selected-day-venue').innerText = rec.venue;
+      document.getElementById('selected-punch-in').innerText = rec.punchIn;
+      document.getElementById('selected-punch-out').innerText = rec.punchOut;
+      document.getElementById('selected-duty-span').innerText = rec.dutyHours;
+
+      renderWeekScroller();
+      renderMonthMatrix();
+      showToast(`Selected: ${day} Aug · Status: ${rec.status.toUpperCase()}`);
+    }
+
+    function toggleCalendarView(mode) {
+      const weekView = document.getElementById('attendance-week-view');
+      const monthView = document.getElementById('attendance-month-view');
+      const weekBtn = document.getElementById('view-mode-week');
+      const monthBtn = document.getElementById('view-mode-month');
+
+      if (mode === 'week') {
+        weekView.classList.remove('hidden');
+        monthView.classList.add('hidden');
+        weekBtn.className = 'px-2.5 py-1 text-[10px] font-bold rounded-lg bg-white text-erp-brandIndigo shadow-sm transition-all flex items-center gap-1';
+        monthBtn.className = 'px-2.5 py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-slate-700 transition-all flex items-center gap-1';
+      } else {
+        weekView.classList.add('hidden');
+        monthView.classList.remove('hidden');
+        monthBtn.className = 'px-2.5 py-1 text-[10px] font-bold rounded-lg bg-white text-erp-brandIndigo shadow-sm transition-all flex items-center gap-1';
+        weekBtn.className = 'px-2.5 py-1 text-[10px] font-bold rounded-lg text-slate-400 hover:text-slate-700 transition-all flex items-center gap-1';
+      }
+    }
+
+    function navigateMonth(dir) {
+      showToast(dir > 0 ? 'Viewing September 2026' : 'Viewing July 2026');
+    }
+
+    // 4. TICKING STATUS CLOCK & DUTY TIMER
+    const baseDutyTime = new Date();
+    baseDutyTime.setHours(baseDutyTime.getHours() - 10);
+    baseDutyTime.setMinutes(baseDutyTime.getMinutes() - 19);
+    baseDutyTime.setSeconds(baseDutyTime.getSeconds() - 42);
+
+    function runDutyClock() {
+      const now = new Date();
+      const hStr = String(now.getHours()).padStart(2, '0');
+      const mStr = String(now.getMinutes()).padStart(2, '0');
+      const clockEl = document.getElementById('status-clock');
+      if (clockEl) clockEl.innerText = `${hStr}:${mStr}`;
+
+      const diffSec = Math.floor((now - baseDutyTime) / 1000);
+      const hours = Math.floor(diffSec / 3600);
+      const mins = Math.floor((diffSec % 3600) / 60);
+      const secs = diffSec % 60;
+
+      const formatted = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      const timerEl = document.getElementById('live-duty-timer');
+      if (timerEl) timerEl.innerText = formatted;
+
+      const drawerTimerEl = document.getElementById('drawer-duty-timer');
+      if (drawerTimerEl) drawerTimerEl.innerText = formatted;
+
+      if (activeAttendanceDay === 17) {
+        const inspectorDuty = document.getElementById('selected-duty-span');
+        if (inspectorDuty) inspectorDuty.innerText = `${hours}h ${mins}m ${secs}s`;
+      }
+    }
+    setInterval(runDutyClock, 1000);
+    runDutyClock();
+
+    // 5. SIDEBAR NAVIGATION DRAWER TOGGLE
+    let isSidebarOpen = false;
+    function toggleSidebarMenu() {
+      const drawer = document.getElementById('sidebar-drawer');
+      const overlay = document.getElementById('sidebar-drawer-overlay');
+      const panel = document.getElementById('sidebar-drawer-panel');
+
+      isSidebarOpen = !isSidebarOpen;
+
+      if (isSidebarOpen) {
+        drawer.classList.remove('pointer-events-none');
+        overlay.classList.remove('opacity-0');
+        overlay.classList.add('opacity-100');
+        panel.classList.remove('-translate-x-full');
+        panel.classList.add('translate-x-0');
+      } else {
+        drawer.classList.add('pointer-events-none');
+        overlay.classList.remove('opacity-100');
+        overlay.classList.add('opacity-0');
+        panel.classList.remove('translate-x-0');
+        panel.classList.add('-translate-x-full');
+      }
+
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    }
+
+    function handleDrawerNav(label) {
+      toggleSidebarMenu();
+      showToast(`Opened: ${label}`);
+    }
+
+    // 6. ACTION DRAWER AND MODALS
+    function toggleActionMenu() {
+      const drawer = document.getElementById('action-drawer');
+      const icon = document.getElementById('plus-icon');
+      const isHidden = drawer.classList.contains('hidden');
+
+      if (isHidden) {
+        drawer.classList.remove('hidden');
+        icon.classList.add('rotate-45');
+      } else {
+        drawer.classList.add('hidden');
+        icon.classList.remove('rotate-45');
+      }
+    }
+
+    function recordAction(action) {
+      toggleActionMenu();
+      showToast(`Logged Action: ${action}`);
+    }
+
+    function toggleHelpModal() {
+      document.getElementById('help-drawer').classList.toggle('hidden');
+    }
+
+    function handleQuickHelp(topic) {
+      toggleHelpModal();
+      showToast(`Support Ticket Created: ${topic}`);
+    }
+
+    function setActiveNav(btn, label) {
+      document.querySelectorAll('.nav-item').forEach(b => {
+        b.classList.remove('bg-indigo-50/80', 'text-[#5851ea]');
+        b.classList.add('text-slate-400');
+      });
+
+      btn.classList.remove('text-slate-400');
+      btn.classList.add('bg-indigo-50/80', 'text-[#5851ea]');
+
+      showToast(`Switched to: ${label}`);
+    }
+
+    // 6. TOAST MESSENGER
+    let toastTimer;
+    function showToast(msg) {
+      const toast = document.getElementById('toast-pill');
+      document.getElementById('toast-text').innerText = msg;
+      toast.classList.remove('hidden');
+
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 2500);
+    }
+
+    function hideToast() {
+      document.getElementById('toast-pill').classList.add('hidden');
+    }
+
+    // Initial boot
+    window.addEventListener('DOMContentLoaded', () => {
+      renderWeekScroller();
+      renderMonthMatrix();
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    });
+  </script>
+</body>
+
+</html>
